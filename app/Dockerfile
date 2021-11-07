@@ -1,0 +1,28 @@
+FROM nextcloud:apache
+ 
+COPY redis.config.php /usr/src/nextcloud/config/redis.config.php
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+RUN chmod a+rx /usr/local/bin/yt-dlp
+
+RUN apt-get update \
+        && apt-get install -y aria2 curl imagemagick libmagickcore-6.q16-6-extra  supervisor wget --no-install-recommends \
+        && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /var/log/aria2c /var/local/aria2c 
+RUN touch /var/log/aria2c/aria2c.log
+RUN touch /var/local/aria2c/aria2c.sess
+RUN chown www-data.www-data -R /var/log/aria2c /var/local/aria2c
+RUN chmod 770 -R /var/log/aria2c /var/local/aria2c
+RUN runuser --user www-data -- aria2c --enable-rpc --rpc-allow-origin-all -c -D --log=/var/log/aria2c/aria2c.log --check-certificate=false --save-session=/var/local/aria2c/aria2c.sess --save-session-interval=2 --continue=true --input-file=/var/local/aria2c/aria2c.sess --rpc-save-upload-metadata=true --force-save=true --log-level=warn
+
+RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh --directory-prefix=/tmp/ \
+        && chmod +x /tmp/wait-for-it.sh
+
+RUN mkdir -p \
+    /var/log/supervisord \
+    /var/run/supervisord
+
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY entrypoint.sh /tmp/entrypoint.sh
+
+CMD ["/tmp/entrypoint.sh"]
