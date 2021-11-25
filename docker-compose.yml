@@ -65,7 +65,7 @@ services:
     cap_add:
       - MKNOD
     environment:
-      - 'domain=cloud.domain.tld'
+      - domain=cloud\\.dasnetzundich\\.de
       - 'dictionaries=de,en'
     tty: true
     networks:
